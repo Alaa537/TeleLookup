@@ -25,9 +25,39 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq tmux nano htop net-tools curl wget
 
-      - name: Start tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 340
-        with:
-          limit-access-to-actor: false
-          detached: false
+      - name: Install tmate
+        run: |
+          wget -qO /tmp/tmate.tar.xz https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz
+          tar -xJf /tmp/tmate.tar.xz -C /tmp
+          sudo mv /tmp/tmate-2.4.0-static-linux-amd64/tmate /usr/local/bin/tmate
+          tmate -V
+
+      - name: Start tmate and show connection info
+        run: |
+          tmate -S /tmp/tmate.sock new-session -d
+          tmate -S /tmp/tmate.sock wait tmate-ready
+
+          SSH_CMD=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
+          WEB_URL=$(tmate -S /tmp/tmate.sock display -p '#{tmate_web}')
+
+          echo "=========================================="
+          echo "SSH: $SSH_CMD"
+          echo "WEB: $WEB_URL"
+          echo "=========================================="
+
+          {
+            echo "## 🌐 رابط الاتصال بـ tmate"
+            echo ""
+            echo "**SSH:** \`$SSH_CMD\`"
+            echo ""
+            echo "**Web:** $WEB_URL"
+            echo ""
+            echo "استخدم الأمر ده في Termux:"
+            echo ""
+            echo '```bash'
+            echo "$SSH_CMD"
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+
+          # خلي الجلسة شغالة لحد ما الوقت يخلص
+          sleep 20000
